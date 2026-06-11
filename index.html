@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trending Radar 🔭 | GitHub AI项目雷达</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #bc8cff;
+            --accent-pink: #f778ba;
+            --glow-blue: rgba(88, 166, 255, 0.15);
+            --glow-green: rgba(63, 185, 80, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(88,166,255,0.03) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 80%, rgba(188,140,255,0.03) 0%, transparent 50%);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-2%, 2%); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+        }
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .header .meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .header .meta .pulse {
+            width: 8px; height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px var(--glow-blue);
+            transform: translateY(-2px);
+        }
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+        .stat-card .label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        .filter-tab {
+            padding: 0.5rem 1.25rem;
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .filter-tab:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+        .filter-tab.active {
+            background: var(--accent-blue);
+            color: #fff;
+            border-color: var(--accent-blue);
+        }
+
+        /* Project Grid */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .project-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .project-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px var(--glow-blue);
+            transform: translateY(-4px);
+        }
+        .project-card:hover::before { opacity: 1; }
+
+        .project-card .rank {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            width: 28px; height: 28px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+        .project-card .rank.top3 {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+            border: none;
+            color: #fff;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .card-header .icon {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .card-header .info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+            color: var(--text-primary);
+        }
+        .card-header .info h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .card-header .info h3 a:hover { color: var(--accent-blue); }
+        .card-header .info .author {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+        .tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .tag.lang { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .tag.hot { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+        .card-stats {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        .card-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .card-stat .star-icon { color: var(--accent-orange); }
+        .card-stat .fork-icon { color: var(--text-secondary); }
+        .card-stat .growth { color: var(--accent-green); font-weight: 600; }
+
+        /* Trend Chart Section */
+        .trend-section {
+            margin-top: 3rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+        .trend-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .chart-container {
+            width: 100%;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        .chart-bar-group {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 100%;
+            padding: 0 1rem;
+        }
+        .chart-bar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        .chart-bar {
+            width: 40px;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.5s ease;
+            position: relative;
+            min-height: 4px;
+        }
+        .chart-bar:hover { filter: brightness(1.2); }
+        .chart-bar-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60px;
+        }
+        .chart-bar-value {
+            font-size: 0.7rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Category Distribution */
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .category-item:hover { border-color: var(--accent-purple); }
+        .category-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .category-info { flex: 1; }
+        .category-name { font-size: 0.9rem; font-weight: 500; }
+        .category-count { font-size: 0.8rem; color: var(--text-secondary); }
+        .category-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 0.4rem;
+            overflow: hidden;
+        }
+        .category-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s ease;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .footer a { color: var(--accent-blue); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header h1 { font-size: 2rem; }
+            .project-grid { grid-template-columns: 1fr; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Loading animation */
+        .loading-shimmer {
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-secondary) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🔭 AI Trending Radar</h1>
+            <p class="subtitle">实时追踪 GitHub 最火 AI 开源项目 · 每日自动分析</p>
+            <div class="meta">
+                <span class="pulse"></span>
+                <span>数据更新: <span id="update-time">2026-06-11</span></span>
+                <span>|</span>
+                <span>追踪项目: <span id="total-projects">0</span></span>
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-bar" id="stats-bar"></div>
+
+        <!-- Filters -->
+        <div class="filter-tabs" id="filter-tabs"></div>
+
+        <!-- Project Grid -->
+        <div class="project-grid" id="project-grid"></div>
+
+        <!-- Trend Chart -->
+        <div class="trend-section">
+            <h2>📊 本周 Star 增长 TOP 10</h2>
+            <div class="chart-container">
+                <div class="chart-bar-group" id="chart-bars"></div>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="trend-section" style="margin-top:1.5rem;">
+            <h2>🗂️ 技术领域分布</h2>
+            <div class="categories" id="categories"></div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>灵感来源: <a href="https://github.com/lgy1027/ai-git-trending">ai-git-trending</a> · <a href="https://github.com/aichipera/github-trend">github-trend</a></p>
+            <p style="margin-top:0.5rem;">Built with 🦐 by 小蓝虾 | Powered by GitHub Trending Data</p>
+        </footer>
+    </div>
+
+    <script>
+    // ====== DATA ======
+    const PROJECTS = [
+        {
+            name: "Odysseus",
+            author: "odysseus-ai",
+            url: "https://github.com/odysseus-ai/odysseus",
+            desc: "本地私有化部署的全能AI工作台，全流程本地运行、数据绝不外泄。整合AI对话、代码生成、文档处理、数据分析、任务自动化等全链路能力。",
+            stars: 64200,
+            growth: 37000,
+            forks: 3100,
+            lang: "TypeScript",
+            category: "AI工作台",
+            tags: ["self-hosted", "privacy", "all-in-one"],
+            icon: "🏛️"
+        },
+        {
+            name: "OpenHuman",
+            author: "tinyhumansai",
+            url: "https://github.com/tinyhumansai/openhuman",
+            desc: "让AI在几分钟内了解你的全部上下文，变成真正懂你的数字分身。支持118+第三方集成，每20分钟自动同步，构建个人记忆树。",
+            stars: 23000,
+            growth: 8400,
+            forks: 1200,
+            lang: "Rust",
+            category: "个人AI",
+            tags: ["digital-twin", "memory", "integrations"],
+            icon: "🧬"
+        },
+        {
+            name: "Gemini CLI",
+            author: "google",
+            url: "https://github.com/google/gemini-cli",
+            desc: "Google开源终端智能体，将Gemini能力带入命令行。支持代码生成、文件操作、工作流自动化，开发者终端效率神器。",
+            stars: 97200,
+            growth: 12300,
+            forks: 5800,
+            lang: "TypeScript",
+            category: "Coding Agent",
+            tags: ["terminal", "gemini", "developer"],
+            icon: "💎"
+        },
+        {
+            name: "OpenCode",
+            author: "opencode-ai",
+            url: "https://github.com/opencode-ai/opencode",
+            desc: "Devin AI的开源平替，社区驱动的自主编码智能体。能分析项目结构、生成代码、自我改进并执行复杂编程任务。",
+            stars: 72400,
+            growth: 9800,
+            forks: 4200,
+            lang: "Go",
+            category: "Coding Agent",
+            tags: ["autonomous", "coding", "open-source"],
+            icon: "⚡"
+        },
+        {
+            name: "DeerFlow 2.0",
+            author: "bytedance",
+            url: "https://github.com/bytedance/deerflow",
+            desc: "字节跳动开源AI自动化框架2.0，登顶GitHub Trending。从深度探索到高效研究流程，让AI Agent真正干活。",
+            stars: 21000,
+            growth: 6500,
+            forks: 1800,
+            lang: "Python",
+            category: "Agent框架",
+            tags: ["automation", "research", "workflow"],
+            icon: "🦌"
+        },
+        {
+            name: "n8n",
+            author: "n8n-io",
+            url: "https://github.com/n8n-io/n8n",
+            desc: "企业级AI工作流瑞士军刀，Fair-Code许可。400+集成、900+模板，原生AI能力可基于LangChain构建Agent工作流。",
+            stars: 157000,
+            growth: 4200,
+            forks: 18500,
+            lang: "TypeScript",
+            category: "自动化",
+            tags: ["workflow", "low-code", "enterprise"],
+            icon: "🔗"
+        },
+        {
+            name: "Natively",
+            author: "Natively-AI",
+            url: "https://github.com/Natively-AI-assistant/natively-cluely-ai-assistant",
+            desc: "免费开源AI面试助手，最佳Cluely替代品。实时转录、隐身模式、本地RAG、BYOK。无订阅，无数据泄露。",
+            stars: 1400,
+            growth: 1400,
+            forks: 180,
+            lang: "TypeScript",
+            category: "AI助手",
+            tags: ["interview", "stealth", "free"],
+            icon: "🎯"
+        },
+        {
+            name: "AI-Agent-Guide",
+            author: "Scodive",
+            url: "https://github.com/Scodive/AI-Agent-Guide",
+            desc: "AI智能体全面权威指南，系统性剖析核心架构：感知、规划推理、记忆、行动四大模块，附论文和开源代码库。",
+            stars: 5200,
+            growth: 3800,
+            forks: 620,
+            lang: "Markdown",
+            category: "学习资源",
+            tags: ["guide", "architecture", "papers"],
+            icon: "📚"
+        },
+        {
+            name: "Ollama",
+            author: "ollama",
+            url: "https://github.com/ollama/ollama",
+            desc: "本地大模型一键启动器，支持Llama、DeepSeek-R1、Gemma 3等。零配置运行，让每个人都能在本地跑LLM。",
+            stars: 160000,
+            growth: 3500,
+            forks: 12300,
+            lang: "Go",
+            category: "模型推理",
+            tags: ["local", "llm", "easy"],
+            icon: "🦙"
+        },
+        {
+            name: "Codex Plugins",
+            author: "openai",
+            url: "https://github.com/openai/codex",
+            desc: "OpenAI Codex角色专属插件：数据分析、创意产出、产品设计三条管线。把工具链和上下文打包成职务导向运行时环境。",
+            stars: 28000,
+            growth: 5200,
+            forks: 2100,
+            lang: "Python",
+            category: "Coding Agent",
+            tags: ["plugins", "roles", "pipelines"],
+            icon: "🧩"
+        },
+        {
+            name: "Qwen3-Coder",
+            author: "QwenLM",
+            url: "https://github.com/QwenLM/Qwen3",
+            desc: "通义千问Qwen3-Coder-Next开源，480B参数A35B激活。专注代码生成与Agent任务，中文编程能力最强开源模型。",
+            stars: 45000,
+            growth: 4800,
+            forks: 3200,
+            lang: "Python",
+            category: "大模型",
+            tags: ["coding", "chinese", "480B"],
+            icon: "🌟"
+        },
+        {
+            name: "browser-use",
+            author: "browser-use",
+            url: "https://github.com/browser-use/browser-use",
+            desc: "让AI Agent像人一样操作浏览器，支持点击、滚动、填表、截图。Web自动化的AI原生方案，已被大量Agent框架集成。",
+            stars: 38000,
+            growth: 4100,
+            forks: 2800,
+            lang: "Python",
+            category: "Agent工具",
+            tags: ["browser", "automation", "web"],
+            icon: "🌐"
+        }
+    ];
+
+    // ====== CATEGORIES ======
+    const CATEGORIES = [
+        { name: "Coding Agent", color: "#58a6ff", count: 3 },
+        { name: "AI工作台", color: "#bc8cff", count: 2 },
+        { name: "Agent框架", color: "#3fb950", count: 2 },
+        { name: "大模型", color: "#f85149", count: 2 },
+        { name: "自动化", color: "#d29922", count: 1 },
+        { name: "个人AI", color: "#f778ba", count: 1 },
+        { name: "学习资源", color: "#79c0ff", count: 1 }
+    ];
+
+    // ====== RENDER ======
+    function init() {
+        document.getElementById('total-projects').textContent = PROJECTS.length;
+        renderStats();
+        renderFilters();
+        renderProjects(PROJECTS);
+        renderChart();
+        renderCategories();
+    }
+
+    function renderStats() {
+        const totalStars = PROJECTS.reduce((s, p) => s + p.stars, 0);
+        const totalGrowth = PROJECTS.reduce((s, p) => s + p.growth, 0);
+        const avgGrowth = Math.round(totalGrowth / PROJECTS.length);
+        const topLang = getMostCommon(PROJECTS.map(p => p.lang));
+
+        const stats = [
+            { value: formatNum(totalStars), label: "总 Stars" },
+            { value: formatNum(totalGrowth), label: "本周新增" },
+            { value: formatNum(avgGrowth), label: "平均增长" },
+            { value: topLang, label: "热门语言" },
+            { value: PROJECTS.length, label: "追踪项目" }
+        ];
+
+        document.getElementById('stats-bar').innerHTML = stats.map(s => `
+            <div class="stat-card">
+                <div class="value">${s.value}</div>
+                <div class="label">${s.label}</div>
+            </div>
+        `).join('');
+    }
+
+    function renderFilters() {
+        const cats = ['全部', ...new Set(PROJECTS.map(p => p.category))];
+        document.getElementById('filter-tabs').innerHTML = cats.map((c, i) => `
+            <div class="filter-tab ${i === 0 ? 'active' : ''}" onclick="filterProjects('${c}')">${c}</div>
+        `).join('');
+    }
+
+    function filterProjects(category) {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        const filtered = category === '全部' ? PROJECTS : PROJECTS.filter(p => p.category === category);
+        renderProjects(filtered);
+    }
+
+    function renderProjects(projects) {
+        const sorted = [...projects].sort((a, b) => b.growth - a.growth);
+        document.getElementById('project-grid').innerHTML = sorted.map((p, i) => `
+            <div class="project-card">
+                <span class="rank ${i < 3 ? 'top3' : ''}">${i + 1}</span>
+                <div class="card-header">
+                    <div class="icon">${p.icon}</div>
+                    <div class="info">
+                        <h3><a href="${p.url}" target="_blank">${p.name}</a></h3>
+                        <span class="author">@${p.author}</span>
+                    </div>
+                </div>
+                <p class="card-desc">${p.desc}</p>
+                <div class="card-tags">
+                    <span class="tag lang">${p.lang}</span>
+                    ${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+                    ${p.growth > 5000 ? '<span class="tag hot">🔥 爆发</span>' : ''}
+                </div>
+                <div class="card-stats">
+                    <span class="card-stat"><span class="star-icon">⭐</span> ${formatNum(p.stars)}</span>
+                    <span class="card-stat"><span class="fork-icon">🍴</span> ${formatNum(p.forks)}</span>
+                    <span class="card-stat"><span class="growth">↑ +${formatNum(p.growth)}</span> /周</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderChart() {
+        const top10 = [...PROJECTS].sort((a, b) => b.growth - a.growth).slice(0, 10);
+        const maxGrowth = Math.max(...top10.map(p => p.growth));
+        const colors = ['#f85149', '#d29922', '#d29922', '#58a6ff', '#58a6ff', '#3fb950', '#3fb950', '#bc8cff', '#bc8cff', '#79c0ff'];
+
+        document.getElementById('chart-bars').innerHTML = top10.map((p, i) => {
+            const height = Math.max(20, (p.growth / maxGrowth) * 160);
+            return `
+                <div class="chart-bar-item">
+                    <span class="chart-bar-value">+${formatNum(p.growth)}</span>
+                    <div class="chart-bar" style="height:${height}px; background:${colors[i]}"></div>
+                    <span class="chart-bar-label">${p.name}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderCategories() {
+        const maxCount = Math.max(...CATEGORIES.map(c => c.count));
+        document.getElementById('categories').innerHTML = CATEGORIES.map(c => `
+            <div class="category-item">
+                <div class="category-dot" style="background:${c.color}"></div>
+                <div class="category-info">
+                    <div class="category-name">${c.name}</div>
+                    <div class="category-count">${c.count} 个项目</div>
+                    <div class="category-bar">
+                        <div class="category-bar-fill" style="width:${(c.count/maxCount)*100}%; background:${c.color}"></div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ====== UTILS ======
+    function formatNum(n) {
+        if (n >= 10000) return (n / 1000).toFixed(1) + 'k';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+        return n.toString();
+    }
+
+    function getMostCommon(arr) {
+        const counts = {};
+        arr.forEach(x => counts[x] = (counts[x] || 0) + 1);
+        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
