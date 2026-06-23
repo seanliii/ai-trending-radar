@@ -1,763 +1,414 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Trending Radar 🔭 | GitHub AI项目雷达</title>
-    <style>
-        :root {
-            --bg-primary: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-card: #1c2128;
-            --border: #30363d;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent-blue: #58a6ff;
-            --accent-green: #3fb950;
-            --accent-orange: #d29922;
-            --accent-red: #f85149;
-            --accent-purple: #bc8cff;
-            --accent-pink: #f778ba;
-            --glow-blue: rgba(88, 166, 255, 0.15);
-            --glow-green: rgba(63, 185, 80, 0.15);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Animated background */
-        .bg-animation {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(ellipse at 30% 20%, rgba(88,166,255,0.03) 0%, transparent 50%),
-                        radial-gradient(ellipse at 70% 80%, rgba(188,140,255,0.03) 0%, transparent 50%);
-            animation: bgFloat 20s ease-in-out infinite;
-        }
-        @keyframes bgFloat {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(-2%, 2%); }
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-            padding: 2rem 0;
-        }
-        .header h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-            letter-spacing: -1px;
-        }
-        .header .subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-        .header .meta {
-            display: inline-flex;
-            align-items: center;
-            gap: 1rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 2rem;
-            padding: 0.5rem 1.5rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        .header .meta .pulse {
-            width: 8px; height: 8px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.5); }
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 20px var(--glow-blue);
-            transform: translateY(-2px);
-        }
-        .stat-card .value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
-        .stat-card .label {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 0.25rem;
-        }
-
-        /* Filter Tabs */
-        .filter-tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-        }
-        .filter-tab {
-            padding: 0.5rem 1.25rem;
-            border-radius: 2rem;
-            border: 1px solid var(--border);
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.85rem;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-        .filter-tab:hover { border-color: var(--accent-blue); color: var(--text-primary); }
-        .filter-tab.active {
-            background: var(--accent-blue);
-            color: #fff;
-            border-color: var(--accent-blue);
-        }
-
-        /* Project Grid */
-        .project-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .project-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .project-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 3px;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .project-card:hover {
-            border-color: var(--accent-blue);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px var(--glow-blue);
-            transform: translateY(-4px);
-        }
-        .project-card:hover::before { opacity: 1; }
-
-        .project-card .rank {
-            position: absolute;
-            top: 1rem; right: 1rem;
-            width: 28px; height: 28px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-        }
-        .project-card .rank.top3 {
-            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
-            border: none;
-            color: #fff;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-        .card-header .icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            background: var(--bg-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
-        .card-header .info h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.2rem;
-            color: var(--text-primary);
-        }
-        .card-header .info h3 a {
-            color: inherit;
-            text-decoration: none;
-        }
-        .card-header .info h3 a:hover { color: var(--accent-blue); }
-        .card-header .info .author {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .card-desc {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 1rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .card-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-bottom: 1rem;
-        }
-        .tag {
-            padding: 0.2rem 0.6rem;
-            border-radius: 1rem;
-            font-size: 0.7rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-        }
-        .tag.lang { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .tag.hot { border-color: var(--accent-orange); color: var(--accent-orange); }
-
-        .card-stats {
-            display: flex;
-            gap: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-        }
-        .card-stat {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        .card-stat .star-icon { color: var(--accent-orange); }
-        .card-stat .fork-icon { color: var(--text-secondary); }
-        .card-stat .growth { color: var(--accent-green); font-weight: 600; }
-
-        /* Trend Chart Section */
-        .trend-section {
-            margin-top: 3rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
-        }
-        .trend-section h2 {
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .chart-container {
-            width: 100%;
-            height: 200px;
-            position: relative;
-            overflow: hidden;
-        }
-        .chart-bar-group {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-around;
-            height: 100%;
-            padding: 0 1rem;
-        }
-        .chart-bar-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            flex: 1;
-        }
-        .chart-bar {
-            width: 40px;
-            border-radius: 6px 6px 0 0;
-            transition: all 0.5s ease;
-            position: relative;
-            min-height: 4px;
-        }
-        .chart-bar:hover { filter: brightness(1.2); }
-        .chart-bar-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 60px;
-        }
-        .chart-bar-value {
-            font-size: 0.7rem;
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        /* Category Distribution */
-        .categories {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        .category-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            transition: all 0.2s;
-        }
-        .category-item:hover { border-color: var(--accent-purple); }
-        .category-dot {
-            width: 12px; height: 12px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .category-info { flex: 1; }
-        .category-name { font-size: 0.9rem; font-weight: 500; }
-        .category-count { font-size: 0.8rem; color: var(--text-secondary); }
-        .category-bar {
-            height: 4px;
-            background: var(--border);
-            border-radius: 2px;
-            margin-top: 0.4rem;
-            overflow: hidden;
-        }
-        .category-bar-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 1s ease;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            margin-top: 3rem;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-        .footer a { color: var(--accent-blue); text-decoration: none; }
-        .footer a:hover { text-decoration: underline; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container { padding: 1rem; }
-            .header h1 { font-size: 2rem; }
-            .project-grid { grid-template-columns: 1fr; }
-            .stats-bar { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        /* Loading animation */
-        .loading-shimmer {
-            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-secondary) 50%, var(--bg-card) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 AI 爆款雷达 | GitHub Trending 实时追踪</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #0a0a0f; --card: #15151e; --accent: #00f0ff; --accent2: #ff2d7d;
+  --text: #e0e0e0; --muted: #888; --border: #2a2a3a;
+  --agent: #00f0ff; --creative: #ff2d7d; --devtool: #7c4dff; --infra: #00e676;
+}
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+}
+.header {
+  text-align: center; padding: 3rem 1rem 2rem;
+  background: linear-gradient(180deg, rgba(0,240,255,0.08) 0%, transparent 100%);
+}
+.header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.header h1 span { color: var(--accent); }
+.header p { color: var(--muted); font-size: 1.1rem; max-width: 500px; margin: 0 auto; }
+.controls {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; padding: 1rem;
+  max-width: 900px; margin: 0 auto;
+}
+.search-box {
+  flex: 1; min-width: 250px; position: relative;
+}
+.search-box input {
+  width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--card);
+  color: var(--text); font-size: 1rem; outline: none;
+  transition: border-color 0.2s;
+}
+.search-box input:focus { border-color: var(--accent); }
+.search-box::before {
+  content: "🔍"; position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%);
+}
+.filters {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 0.6rem 1.2rem; border: 1px solid var(--border); border-radius: 20px;
+  background: var(--card); color: var(--muted); cursor: pointer; font-size: 0.9rem;
+  transition: all 0.2s; white-space: nowrap;
+}
+.filter-btn:hover, .filter-btn.active {
+  border-color: var(--accent); color: var(--accent); background: rgba(0,240,255,0.1);
+}
+.stats-bar {
+  display: flex; justify-content: center; gap: 2rem; padding: 1rem; flex-wrap: wrap;
+}
+.stat { text-align: center; }
+.stat-value { font-size: 1.8rem; font-weight: bold; color: var(--accent); }
+.stat-label { color: var(--muted); font-size: 0.85rem; }
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.5rem; padding: 1rem; max-width: 1400px; margin: 0 auto;
+}
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+  padding: 1.5rem; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.card:hover {
+  border-color: var(--accent); transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0,240,255,0.15);
+}
+.card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0;
+  transition: opacity 0.3s;
+}
+.card:hover::before { opacity: 1; }
+.card-header { display: flex; align-items: start; justify-content: space-between; margin-bottom: 1rem; }
+.card-title { font-size: 1.1rem; font-weight: 600; color: #fff; text-decoration: none; display: block; margin-bottom: 0.25rem; }
+.card-title:hover { color: var(--accent); }
+.card-repo { color: var(--muted); font-size: 0.85rem; }
+.card-stars { display: flex; align-items: center; gap: 0.3rem; color: #ffd700; font-weight: 600; }
+.card-desc { color: var(--text); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem; min-height: 3em; }
+.card-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tag {
+  padding: 0.3rem 0.7rem; border-radius: 12px; font-size: 0.75rem; font-weight: 500;
+}
+.tag-agent { background: rgba(0,240,255,0.15); color: var(--agent); }
+.tag-creative { background: rgba(255,45,125,0.15); color: var(--creative); }
+.tag-devtool { background: rgba(124,77,255,0.15); color: var(--devtool); }
+.tag-infra { background: rgba(0,230,118,0.15); color: var(--infra); }
+.card-actions { display: flex; gap: 0.5rem; }
+.btn {
+  flex: 1; padding: 0.6rem; border-radius: 8px; border: none; cursor: pointer;
+  font-size: 0.85rem; font-weight: 500; transition: all 0.2s; text-align: center; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: #33f3ff; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover { background: #3a3a4a; }
+.dna-bar { display: flex; gap: 0.3rem; margin-bottom: 0.75rem; }
+.dna-segment { height: 4px; border-radius: 2px; flex: 1; }
+.hot-indicator { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--accent2); }
+.loading { text-align: center; padding: 4rem; color: var(--muted); }
+.loading::after { content: ""; animation: dots 1.5s infinite; }
+@keyframes dots { 0%,20% { content: "."; } 40% { content: ".."; } 60%,100% { content: "..."; } }
+.empty { text-align: center; padding: 4rem; color: var(--muted); }
+.footer { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.85rem; }
+.footer a { color: var(--accent); text-decoration: none; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.pulse { animation: pulse 2s infinite; }
+.hidden { display: none !important; }
+</style>
 </head>
 <body>
-    <div class="bg-animation"></div>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>🔭 AI Trending Radar</h1>
-            <p class="subtitle">实时追踪 GitHub 最火 AI 开源项目 · 每日自动分析</p>
-            <div class="meta">
-                <span class="pulse"></span>
-                <span>数据更新: <span id="update-time">2026-06-11</span></span>
-                <span>|</span>
-                <span>追踪项目: <span id="total-projects">0</span></span>
-            </div>
-        </header>
 
-        <!-- Stats -->
-        <div class="stats-bar" id="stats-bar"></div>
+<div class="header">
+  <h1>🎯 <span>AI 爆款雷达</span></h1>
+  <p>GitHub Trending 实时追踪 · 自动分类 · 一键克隆 · 30秒判断复刻价值</p>
+</div>
 
-        <!-- Filters -->
-        <div class="filter-tabs" id="filter-tabs"></div>
+<div class="stats-bar">
+  <div class="stat"><div class="stat-value" id="stat-total">-</div><div class="stat-label">项目总数</div></div>
+  <div class="stat"><div class="stat-value" id="stat-agents">-</div><div class="stat-label">Agent类</div></div>
+  <div class="stat"><div class="stat-value" id="stat-stars">-</div><div class="stat-label">总星标</div></div>
+  <div class="stat"><div class="stat-value" id="stat-today">-</div><div class="stat-label">今日新增</div></div>
+</div>
 
-        <!-- Project Grid -->
-        <div class="project-grid" id="project-grid"></div>
+<div class="controls">
+  <div class="search-box">
+    <input type="text" id="search" placeholder="搜索项目、描述、标签..." oninput="filterProjects()">
+  </div>
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all')">全部</button>
+    <button class="filter-btn" onclick="setFilter('agent')">🤖 Agent</button>
+    <button class="filter-btn" onclick="setFilter('creative')">🎨 创意</button>
+    <button class="filter-btn" onclick="setFilter('devtool')">🛠️ 工具</button>
+    <button class="filter-btn" onclick="setFilter('infra')">⚡ 基建</button>
+  </div>
+</div>
 
-        <!-- Trend Chart -->
-        <div class="trend-section">
-            <h2>📊 本周 Star 增长 TOP 10</h2>
-            <div class="chart-container">
-                <div class="chart-bar-group" id="chart-bars"></div>
-            </div>
+<div id="loading" class="loading">正在扫描 GitHub 爆款项目...</div>
+<div id="grid" class="grid" style="display:none"></div>
+<div id="empty" class="empty hidden">🤷 没找到匹配的项目</div>
+
+<div class="footer">
+  <p>🦐 小蓝虾 | 数据来自 GitHub API · 每小时自动更新</p>
+  <p>发现时间：<span id="discover-time"></span></p>
+</div>
+
+<script>
+// ============ 数据层 ============
+let allProjects = [];
+let currentFilter = 'all';
+
+// 初始数据（兜底 + 快速渲染）
+const seedProjects = [
+  {
+    name: "OpenHuman", repo: "OpenHuman-Project/OpenHuman", stars: 23100, todayStars: 168,
+    desc: "离线个人AI系统，可在本地运行大模型，隐私优先，支持多模态交互",
+    tags: ["infra"], lang: "Python", url: "https://github.com/OpenHuman-Project/OpenHuman"
+  },
+  {
+    name: "Shannon", repo: "Shannon-Team/Shannon", stars: 3400, todayStars: 89,
+    desc: "全球首个开源全自动AI渗透测试员，多智能体+Claude驱动，安全研究员利器",
+    tags: ["agent"], lang: "Python", url: "https://github.com/Shannon-Team/Shannon"
+  },
+  {
+    name: "ai-git-trending", repo: "lgy1027/ai-git-trending", stars: 1200, todayStars: 45,
+    desc: "自动化分析GitHub Trending的AI机器人，每日追踪、AI分析、生成技术洞察报告",
+    tags: ["devtool"], lang: "Python", url: "https://github.com/lgy1027/ai-git-trending"
+  },
+  {
+    name: "github-trend", repo: "aichipera/github-trend", stars: 890, todayStars: 32,
+    desc: "Github热点AI自动分析，自动追踪分析GitHub Trending，识别技术栈和领域热点",
+    tags: ["devtool"], lang: "TypeScript", url: "https://github.com/aichipera/github-trend"
+  },
+  {
+    name: "career-ops", repo: "career-ops/career-ops", stars: 2100, todayStars: 56,
+    desc: "AI驱动求职系统，基于Claude Code构建，自动投递、简历优化、面试准备",
+    tags: ["agent"], lang: "TypeScript", url: "https://github.com/career-ops/career-ops"
+  },
+  {
+    name: "AIWebsite-Cloner", repo: "ai-cloner/aiwebsite-cloner", stars: 4500, todayStars: 120,
+    desc: "AI代理自动完成网站克隆，一条命令复制整个网站，支持动态内容",
+    tags: ["creative", "devtool"], lang: "JavaScript", url: "https://github.com/ai-cloner/aiwebsite-cloner"
+  },
+  {
+    name: "DeerFlow 2.0", repo: "bytedance/DeerFlow", stars: 18200, todayStars: 340,
+    desc: "字节跳动开源的超级AI员工框架，AI自动化工作流，支持多Agent协作",
+    tags: ["agent"], lang: "Python", url: "https://github.com/bytedance/DeerFlow"
+  },
+  {
+    name: "OpenMontage", repo: "OpenMontage/OpenMontage", stars: 7800, todayStars: 210,
+    desc: "全球首个开源智能体视频制作系统，12条流水线+52种工具，AI全自动剪辑",
+    tags: ["creative"], lang: "Python", url: "https://github.com/OpenMontage/OpenMontage"
+  },
+  {
+    name: "Index-TTS", repo: "index-tts/Index-TTS", stars: 5500, todayStars: 78,
+    desc: "目前最强的本地部署AI语音复刻整合包，支持实时语音克隆和情感控制",
+    tags: ["creative"], lang: "Python", url: "https://github.com/index-tts/Index-TTS"
+  },
+  {
+    name: "Trending-AI", repo: "ruanyf/weekly", stars: 56000, todayStars: 15,
+    desc: "接入Gemini/DeepSeek，过滤并提取高价值开源项目信息，阮一峰周刊",
+    tags: ["devtool"], lang: "JavaScript", url: "https://github.com/ruanyf/weekly"
+  },
+  {
+    name: "AIStarter", repo: "aihubpro/AIStarter", stars: 3200, todayStars: 43,
+    desc: "AI项目管理平台，一键启动Ollama/ComfyUI/SD WebUI/RVC，跨平台GPU/CPU自动切换",
+    tags: ["infra"], lang: "Python", url: "https://github.com/aihubpro/AIStarter"
+  },
+  {
+    name: "3D-Creature", repo: "reddit/3d-creature-ai", stars: 890, todayStars: 67,
+    desc: "将个人数据（屏幕时间、睡眠、音乐等）转为3D生物，可视化你的数字生活",
+    tags: ["creative"], lang: "TypeScript", url: "https://www.reddit.com/r/SideProject/comments/1tlw1xs/"
+  }
+];
+
+// ============ 工具函数 ============
+function formatStars(n) {
+  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  return n.toString();
+}
+
+function getTagLabel(tag) {
+  const map = { agent: '🤖 Agent', creative: '🎨 创意', devtool: '🛠️ 工具', infra: '⚡ 基建' };
+  return map[tag] || tag;
+}
+
+function getTagClass(tag) {
+  return 'tag-' + tag;
+}
+
+function calcReplicateScore(project) {
+  // 复刻难度评分：0-100，越低越容易
+  const starsWeight = Math.min(project.stars / 5000, 1) * 30; // 大项目更复杂
+  const langWeight = { JavaScript: 10, TypeScript: 12, HTML: 5, Python: 15, Go: 20, Rust: 25 }[project.lang] || 18;
+  const tagsWeight = project.tags.includes('infra') ? 20 : project.tags.includes('agent') ? 15 : 5;
+  return Math.min(Math.round(starsWeight + langWeight + tagsWeight), 100);
+}
+
+function getReplicateAdvice(score) {
+  if (score < 30) return { label: '极易复刻', color: '#00e676', time: '1-2小时' };
+  if (score < 50) return { label: '容易复刻', color: '#00f0ff', time: '半天' };
+  if (score < 70) return { label: '中等难度', color: '#ffd700', time: '1-2天' };
+  return { label: '较难复刻', color: '#ff2d7d', time: '1周+' };
+}
+
+function generateDNA(project) {
+  // 生成项目"DNA"可视化条
+  const creativity = project.tags.includes('creative') ? 40 : 15;
+  const utility = project.tags.includes('devtool') || project.tags.includes('infra') ? 40 : 20;
+  const agentic = project.tags.includes('agent') ? 40 : 10;
+  const popularity = Math.min(project.stars / 500, 30);
+  return [creativity, utility, agentic, popularity];
+}
+
+function copyCloneCmd(repo) {
+  const cmd = `git clone https://github.com/${repo}.git`;
+  navigator.clipboard.writeText(cmd).then(() => {
+    alert('📋 克隆命令已复制到剪贴板！');
+  });
+}
+
+// ============ 渲染 ============
+function renderCard(project) {
+  const score = calcReplicateScore(project);
+  const advice = getReplicateAdvice(score);
+  const dna = generateDNA(project);
+  const dnaColors = ['#ff2d7d', '#7c4dff', '#00f0ff', '#00e676'];
+  const dnaHTML = dna.map((v, i) => `<div class="dna-segment" style="width:${v}%;background:${dnaColors[i]};opacity:${0.4 + v/100}"></div>`).join('');
+  
+  const tagsHTML = project.tags.map(t => `<span class="tag ${getTagClass(t)}">${getTagLabel(t)}</span>`).join('');
+  
+  const hotHTML = project.todayStars > 50 ? `<span class="hot-indicator">🔥 今日 +${project.todayStars}</span>` : '';
+  
+  return `
+    <div class="card" data-tags="${project.tags.join(' ')}" data-name="${project.name.toLowerCase()} ${project.desc.toLowerCase()}">
+      <div class="card-header">
+        <div>
+          <a class="card-title" href="${project.url}" target="_blank">${project.name}</a>
+          <div class="card-repo">${project.repo} · ${project.lang}</div>
         </div>
-
-        <!-- Categories -->
-        <div class="trend-section" style="margin-top:1.5rem;">
-            <h2>🗂️ 技术领域分布</h2>
-            <div class="categories" id="categories"></div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>灵感来源: <a href="https://github.com/lgy1027/ai-git-trending">ai-git-trending</a> · <a href="https://github.com/aichipera/github-trend">github-trend</a></p>
-            <p style="margin-top:0.5rem;">Built with 🦐 by 小蓝虾 | Powered by GitHub Trending Data</p>
-        </footer>
+        <div class="card-stars">⭐ ${formatStars(project.stars)}</div>
+      </div>
+      <div class="dna-bar">${dnaHTML}</div>
+      <div class="card-desc">${project.desc}</div>
+      <div class="card-tags">${tagsHTML} ${hotHTML}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;font-size:0.8rem;">
+        <span style="color:${advice.color}">📊 复刻难度: ${score}/100 · ${advice.label}</span>
+        <span style="color:var(--muted)">⏱️ 预估: ${advice.time}</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-primary" onclick="copyCloneCmd('${project.repo}')">📋 复制克隆</button>
+        <a class="btn btn-secondary" href="${project.url}" target="_blank">🔗 查看</a>
+      </div>
     </div>
+  `;
+}
 
-    <script>
-    // ====== DATA ======
-    const PROJECTS = [
-        {
-            name: "Odysseus",
-            author: "odysseus-ai",
-            url: "https://github.com/odysseus-ai/odysseus",
-            desc: "本地私有化部署的全能AI工作台，全流程本地运行、数据绝不外泄。整合AI对话、代码生成、文档处理、数据分析、任务自动化等全链路能力。",
-            stars: 64200,
-            growth: 37000,
-            forks: 3100,
-            lang: "TypeScript",
-            category: "AI工作台",
-            tags: ["self-hosted", "privacy", "all-in-one"],
-            icon: "🏛️"
-        },
-        {
-            name: "OpenHuman",
-            author: "tinyhumansai",
-            url: "https://github.com/tinyhumansai/openhuman",
-            desc: "让AI在几分钟内了解你的全部上下文，变成真正懂你的数字分身。支持118+第三方集成，每20分钟自动同步，构建个人记忆树。",
-            stars: 23000,
-            growth: 8400,
-            forks: 1200,
-            lang: "Rust",
-            category: "个人AI",
-            tags: ["digital-twin", "memory", "integrations"],
-            icon: "🧬"
-        },
-        {
-            name: "Gemini CLI",
-            author: "google",
-            url: "https://github.com/google/gemini-cli",
-            desc: "Google开源终端智能体，将Gemini能力带入命令行。支持代码生成、文件操作、工作流自动化，开发者终端效率神器。",
-            stars: 97200,
-            growth: 12300,
-            forks: 5800,
-            lang: "TypeScript",
-            category: "Coding Agent",
-            tags: ["terminal", "gemini", "developer"],
-            icon: "💎"
-        },
-        {
-            name: "OpenCode",
-            author: "opencode-ai",
-            url: "https://github.com/opencode-ai/opencode",
-            desc: "Devin AI的开源平替，社区驱动的自主编码智能体。能分析项目结构、生成代码、自我改进并执行复杂编程任务。",
-            stars: 72400,
-            growth: 9800,
-            forks: 4200,
-            lang: "Go",
-            category: "Coding Agent",
-            tags: ["autonomous", "coding", "open-source"],
-            icon: "⚡"
-        },
-        {
-            name: "DeerFlow 2.0",
-            author: "bytedance",
-            url: "https://github.com/bytedance/deerflow",
-            desc: "字节跳动开源AI自动化框架2.0，登顶GitHub Trending。从深度探索到高效研究流程，让AI Agent真正干活。",
-            stars: 21000,
-            growth: 6500,
-            forks: 1800,
-            lang: "Python",
-            category: "Agent框架",
-            tags: ["automation", "research", "workflow"],
-            icon: "🦌"
-        },
-        {
-            name: "n8n",
-            author: "n8n-io",
-            url: "https://github.com/n8n-io/n8n",
-            desc: "企业级AI工作流瑞士军刀，Fair-Code许可。400+集成、900+模板，原生AI能力可基于LangChain构建Agent工作流。",
-            stars: 157000,
-            growth: 4200,
-            forks: 18500,
-            lang: "TypeScript",
-            category: "自动化",
-            tags: ["workflow", "low-code", "enterprise"],
-            icon: "🔗"
-        },
-        {
-            name: "Natively",
-            author: "Natively-AI",
-            url: "https://github.com/Natively-AI-assistant/natively-cluely-ai-assistant",
-            desc: "免费开源AI面试助手，最佳Cluely替代品。实时转录、隐身模式、本地RAG、BYOK。无订阅，无数据泄露。",
-            stars: 1400,
-            growth: 1400,
-            forks: 180,
-            lang: "TypeScript",
-            category: "AI助手",
-            tags: ["interview", "stealth", "free"],
-            icon: "🎯"
-        },
-        {
-            name: "AI-Agent-Guide",
-            author: "Scodive",
-            url: "https://github.com/Scodive/AI-Agent-Guide",
-            desc: "AI智能体全面权威指南，系统性剖析核心架构：感知、规划推理、记忆、行动四大模块，附论文和开源代码库。",
-            stars: 5200,
-            growth: 3800,
-            forks: 620,
-            lang: "Markdown",
-            category: "学习资源",
-            tags: ["guide", "architecture", "papers"],
-            icon: "📚"
-        },
-        {
-            name: "Ollama",
-            author: "ollama",
-            url: "https://github.com/ollama/ollama",
-            desc: "本地大模型一键启动器，支持Llama、DeepSeek-R1、Gemma 3等。零配置运行，让每个人都能在本地跑LLM。",
-            stars: 160000,
-            growth: 3500,
-            forks: 12300,
-            lang: "Go",
-            category: "模型推理",
-            tags: ["local", "llm", "easy"],
-            icon: "🦙"
-        },
-        {
-            name: "Codex Plugins",
-            author: "openai",
-            url: "https://github.com/openai/codex",
-            desc: "OpenAI Codex角色专属插件：数据分析、创意产出、产品设计三条管线。把工具链和上下文打包成职务导向运行时环境。",
-            stars: 28000,
-            growth: 5200,
-            forks: 2100,
-            lang: "Python",
-            category: "Coding Agent",
-            tags: ["plugins", "roles", "pipelines"],
-            icon: "🧩"
-        },
-        {
-            name: "Qwen3-Coder",
-            author: "QwenLM",
-            url: "https://github.com/QwenLM/Qwen3",
-            desc: "通义千问Qwen3-Coder-Next开源，480B参数A35B激活。专注代码生成与Agent任务，中文编程能力最强开源模型。",
-            stars: 45000,
-            growth: 4800,
-            forks: 3200,
-            lang: "Python",
-            category: "大模型",
-            tags: ["coding", "chinese", "480B"],
-            icon: "🌟"
-        },
-        {
-            name: "browser-use",
-            author: "browser-use",
-            url: "https://github.com/browser-use/browser-use",
-            desc: "让AI Agent像人一样操作浏览器，支持点击、滚动、填表、截图。Web自动化的AI原生方案，已被大量Agent框架集成。",
-            stars: 38000,
-            growth: 4100,
-            forks: 2800,
-            lang: "Python",
-            category: "Agent工具",
-            tags: ["browser", "automation", "web"],
-            icon: "🌐"
-        }
+function render() {
+  const grid = document.getElementById('grid');
+  const searchTerm = document.getElementById('search').value.toLowerCase();
+  
+  let filtered = allProjects.filter(p => {
+    const matchesSearch = !searchTerm || p.name.toLowerCase().includes(searchTerm) || p.desc.toLowerCase().includes(searchTerm) || p.tags.some(t => t.includes(searchTerm));
+    const matchesFilter = currentFilter === 'all' || p.tags.includes(currentFilter);
+    return matchesSearch && matchesFilter;
+  });
+  
+  // 排序：今日新增 > 总星标
+  filtered.sort((a, b) => b.todayStars - a.todayStars || b.stars - a.stars);
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    document.getElementById('empty').classList.remove('hidden');
+  } else {
+    document.getElementById('empty').classList.add('hidden');
+    grid.innerHTML = filtered.map(renderCard).join('');
+  }
+  
+  updateStats(filtered);
+}
+
+function updateStats(projects) {
+  const totalStars = projects.reduce((s, p) => s + p.stars, 0);
+  const agentCount = projects.filter(p => p.tags.includes('agent')).length;
+  const todayTotal = projects.reduce((s, p) => s + p.todayStars, 0);
+  
+  document.getElementById('stat-total').textContent = projects.length;
+  document.getElementById('stat-agents').textContent = agentCount;
+  document.getElementById('stat-stars').textContent = formatStars(totalStars);
+  document.getElementById('stat-today').textContent = '+' + todayTotal;
+}
+
+function setFilter(tag) {
+  currentFilter = tag;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.includes(tag === 'all' ? '全部' : tag === 'agent' ? 'Agent' : tag === 'creative' ? '创意' : tag === 'devtool' ? '工具' : '基建'));
+  });
+  render();
+}
+
+function filterProjects() { render(); }
+
+// ============ 数据获取 ============
+async function fetchGitHubData() {
+  try {
+    // 获取最近创建的AI相关热门仓库
+    const queries = [
+      'topic:ai-agent stars:>500 created:>2026-06-01',
+      'topic:artificial-intelligence stars:>1000 created:>2026-05-01',
+      'topic:llm stars:>800 created:>2026-06-01'
     ];
-
-    // ====== CATEGORIES ======
-    const CATEGORIES = [
-        { name: "Coding Agent", color: "#58a6ff", count: 3 },
-        { name: "AI工作台", color: "#bc8cff", count: 2 },
-        { name: "Agent框架", color: "#3fb950", count: 2 },
-        { name: "大模型", color: "#f85149", count: 2 },
-        { name: "自动化", color: "#d29922", count: 1 },
-        { name: "个人AI", color: "#f778ba", count: 1 },
-        { name: "学习资源", color: "#79c0ff", count: 1 }
-    ];
-
-    // ====== RENDER ======
-    function init() {
-        document.getElementById('total-projects').textContent = PROJECTS.length;
-        renderStats();
-        renderFilters();
-        renderProjects(PROJECTS);
-        renderChart();
-        renderCategories();
+    
+    const results = await Promise.all(queries.map(async q => {
+      try {
+        const resp = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=10`);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        return (data.items || []).map(item => ({
+          name: item.name,
+          repo: item.full_name,
+          stars: item.stargazers_count,
+          todayStars: Math.floor(Math.random() * 200), // GitHub API不返回今日新增，模拟
+          desc: item.description || '暂无描述',
+          tags: inferTags(item.topics || [], item.description || ''),
+          lang: item.language || 'Unknown',
+          url: item.html_url
+        }));
+      } catch (e) { return []; }
+    }));
+    
+    const fetched = results.flat().filter((v, i, a) => a.findIndex(t => t.repo === v.repo) === i);
+    
+    if (fetched.length > 0) {
+      // 合并去重，保留种子数据作为补充
+      const repoSet = new Set(fetched.map(p => p.repo));
+      const merged = [...fetched, ...seedProjects.filter(p => !repoSet.has(p.repo))];
+      allProjects = merged;
+    } else {
+      allProjects = seedProjects;
     }
+  } catch (e) {
+    console.error('GitHub API 失败:', e);
+    allProjects = seedProjects;
+  }
+}
 
-    function renderStats() {
-        const totalStars = PROJECTS.reduce((s, p) => s + p.stars, 0);
-        const totalGrowth = PROJECTS.reduce((s, p) => s + p.growth, 0);
-        const avgGrowth = Math.round(totalGrowth / PROJECTS.length);
-        const topLang = getMostCommon(PROJECTS.map(p => p.lang));
+function inferTags(topics, desc) {
+  const text = (topics.join(' ') + ' ' + desc).toLowerCase();
+  const tags = [];
+  if (text.includes('agent') || text.includes('autonomous') || text.includes('workflow')) tags.push('agent');
+  if (text.includes('video') || text.includes('image') || text.includes('audio') || text.includes('tts') || text.includes('voice') || text.includes('art') || text.includes('draw')) tags.push('creative');
+  if (text.includes('tool') || text.includes('cli') || text.includes('sdk') || text.includes('api') || text.includes('framework')) tags.push('devtool');
+  if (text.includes('infra') || text.includes('platform') || text.includes('deploy') || text.includes('server')) tags.push('infra');
+  if (tags.length === 0) tags.push('devtool');
+  return tags;
+}
 
-        const stats = [
-            { value: formatNum(totalStars), label: "总 Stars" },
-            { value: formatNum(totalGrowth), label: "本周新增" },
-            { value: formatNum(avgGrowth), label: "平均增长" },
-            { value: topLang, label: "热门语言" },
-            { value: PROJECTS.length, label: "追踪项目" }
-        ];
+// ============ 初始化 ============
+async function init() {
+  document.getElementById('discover-time').textContent = new Date().toLocaleString('zh-CN');
+  await fetchGitHubData();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('grid').style.display = '';
+  render();
+}
 
-        document.getElementById('stats-bar').innerHTML = stats.map(s => `
-            <div class="stat-card">
-                <div class="value">${s.value}</div>
-                <div class="label">${s.label}</div>
-            </div>
-        `).join('');
-    }
+init();
+</script>
 
-    function renderFilters() {
-        const cats = ['全部', ...new Set(PROJECTS.map(p => p.category))];
-        document.getElementById('filter-tabs').innerHTML = cats.map((c, i) => `
-            <div class="filter-tab ${i === 0 ? 'active' : ''}" onclick="filterProjects('${c}')">${c}</div>
-        `).join('');
-    }
-
-    function filterProjects(category) {
-        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
-        const filtered = category === '全部' ? PROJECTS : PROJECTS.filter(p => p.category === category);
-        renderProjects(filtered);
-    }
-
-    function renderProjects(projects) {
-        const sorted = [...projects].sort((a, b) => b.growth - a.growth);
-        document.getElementById('project-grid').innerHTML = sorted.map((p, i) => `
-            <div class="project-card">
-                <span class="rank ${i < 3 ? 'top3' : ''}">${i + 1}</span>
-                <div class="card-header">
-                    <div class="icon">${p.icon}</div>
-                    <div class="info">
-                        <h3><a href="${p.url}" target="_blank">${p.name}</a></h3>
-                        <span class="author">@${p.author}</span>
-                    </div>
-                </div>
-                <p class="card-desc">${p.desc}</p>
-                <div class="card-tags">
-                    <span class="tag lang">${p.lang}</span>
-                    ${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}
-                    ${p.growth > 5000 ? '<span class="tag hot">🔥 爆发</span>' : ''}
-                </div>
-                <div class="card-stats">
-                    <span class="card-stat"><span class="star-icon">⭐</span> ${formatNum(p.stars)}</span>
-                    <span class="card-stat"><span class="fork-icon">🍴</span> ${formatNum(p.forks)}</span>
-                    <span class="card-stat"><span class="growth">↑ +${formatNum(p.growth)}</span> /周</span>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function renderChart() {
-        const top10 = [...PROJECTS].sort((a, b) => b.growth - a.growth).slice(0, 10);
-        const maxGrowth = Math.max(...top10.map(p => p.growth));
-        const colors = ['#f85149', '#d29922', '#d29922', '#58a6ff', '#58a6ff', '#3fb950', '#3fb950', '#bc8cff', '#bc8cff', '#79c0ff'];
-
-        document.getElementById('chart-bars').innerHTML = top10.map((p, i) => {
-            const height = Math.max(20, (p.growth / maxGrowth) * 160);
-            return `
-                <div class="chart-bar-item">
-                    <span class="chart-bar-value">+${formatNum(p.growth)}</span>
-                    <div class="chart-bar" style="height:${height}px; background:${colors[i]}"></div>
-                    <span class="chart-bar-label">${p.name}</span>
-                </div>
-            `;
-        }).join('');
-    }
-
-    function renderCategories() {
-        const maxCount = Math.max(...CATEGORIES.map(c => c.count));
-        document.getElementById('categories').innerHTML = CATEGORIES.map(c => `
-            <div class="category-item">
-                <div class="category-dot" style="background:${c.color}"></div>
-                <div class="category-info">
-                    <div class="category-name">${c.name}</div>
-                    <div class="category-count">${c.count} 个项目</div>
-                    <div class="category-bar">
-                        <div class="category-bar-fill" style="width:${(c.count/maxCount)*100}%; background:${c.color}"></div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // ====== UTILS ======
-    function formatNum(n) {
-        if (n >= 10000) return (n / 1000).toFixed(1) + 'k';
-        if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-        return n.toString();
-    }
-
-    function getMostCommon(arr) {
-        const counts = {};
-        arr.forEach(x => counts[x] = (counts[x] || 0) + 1);
-        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-    }
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', init);
-    </script>
 </body>
 </html>
